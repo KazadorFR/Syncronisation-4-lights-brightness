@@ -1,0 +1,56 @@
+- id: 'sync_brightness_of_4_entities'
+  alias: Synchronize brightness states
+  description: Synchronize the brightness of 4 entities
+  domain: automation
+  input:
+    entity_1:
+      name: First entity
+      selector:
+        entity: {}
+    entity_2:
+      name: Second entity
+      selector:
+        entity: {}
+    entity_3:
+      name: Third entity
+      selector:
+        entity: {}
+    entity_4:
+      name: Fourth entity
+      selector:
+        entity: {}
+  trigger:
+  - platform: state
+    entity_id: !input entity_1
+  - platform: state
+    entity_id: !input entity_1
+    attribute: brightness
+  - platform: state
+    entity_id: !input entity_2
+  - platform: state
+    entity_id: !input entity_2
+    attribute: brightness
+  - platform: state
+    entity_id: !input entity_3
+  - platform: state
+    entity_id: !input entity_3
+    attribute: brightness
+  - platform: state
+    entity_id: !input entity_4
+  - platform: state
+    entity_id: !input entity_4
+    attribute: brightness
+  action:
+  - choose:
+      - conditions:
+          condition: template
+          value_template: "{{ is_state(trigger.to_state.entity_id, 'on') }}"
+        sequence:
+          - service: light.turn_on
+            data:
+              brightness: "{{ state_attr(trigger.to_state.entity_id, 'brightness') }}"
+              entity_id: "{% if trigger.from_state.entity_id == entity_1 %} {{ entity_2 }} {% elif trigger.from_state.entity_id == entity_2 %} {{ entity_1 }} {% elif trigger.from_state.entity_id == entity_3 %} {{ entity_4 }} {% else %} {{ entity_3 }} {% endif %}"
+    default:
+    - service: light.turn_off
+      target:
+        entity_id: "{% if trigger.from_state.entity_id == entity_1 %} {{ entity_2 }} {% elif trigger.from_state.entity_id == entity_2 %} {{ entity_1 }} {% elif trigger.from_state.entity_id == entity_3 %} {{ entity_4 }} {% else %} {{ entity_3 }} {% endif %}"
