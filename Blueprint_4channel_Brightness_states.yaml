@@ -1,56 +1,77 @@
-- id: 'sync_brightness_of_4_entities'
-  alias: Synchronize brightness states
-  description: Synchronize the brightness of 4 entities
+blueprint:
+  name: Synchronize states
+  description: 'Synchronize the on/off state of 4 entities'
   domain: automation
   input:
     entity_1:
       name: First entity
       selector:
-        entity: {}
+        entity:
     entity_2:
       name: Second entity
       selector:
-        entity: {}
+        entity:
     entity_3:
       name: Third entity
       selector:
-        entity: {}
+        entity:
     entity_4:
       name: Fourth entity
       selector:
-        entity: {}
-  trigger:
+        entity:
+mode: restart
+max_exceeded: silent
+variables:
+  entity_1: !input 'entity_1'
+  entity_2: !input 'entity_2'
+  entity_3: !input 'entity_3'
+  entity_4: !input 'entity_4'
+trigger:
   - platform: state
-    entity_id: !input entity_1
+    entity_id: !input 'entity_1'
+    to:
+      - "off"
+      - "on"
   - platform: state
-    entity_id: !input entity_1
-    attribute: brightness
+    entity_id: !input 'entity_2'
+    to:
+      - "off"
+      - "on"
   - platform: state
-    entity_id: !input entity_2
+    entity_id: !input 'entity_3'
+    to:
+      - "off"
+      - "on"
   - platform: state
-    entity_id: !input entity_2
-    attribute: brightness
-  - platform: state
-    entity_id: !input entity_3
-  - platform: state
-    entity_id: !input entity_3
-    attribute: brightness
-  - platform: state
-    entity_id: !input entity_4
-  - platform: state
-    entity_id: !input entity_4
-    attribute: brightness
-  action:
-  - choose:
-      - conditions:
-          condition: template
-          value_template: "{{ is_state(trigger.to_state.entity_id, 'on') }}"
-        sequence:
-          - service: light.turn_on
-            data:
-              brightness: "{{ state_attr(trigger.to_state.entity_id, 'brightness') }}"
-              entity_id: "{% if trigger.from_state.entity_id == entity_1 %} {{ entity_2 }} {% elif trigger.from_state.entity_id == entity_2 %} {{ entity_1 }} {% elif trigger.from_state.entity_id == entity_3 %} {{ entity_4 }} {% else %} {{ entity_3 }} {% endif %}"
-    default:
-    - service: light.turn_off
-      target:
-        entity_id: "{% if trigger.from_state.entity_id == entity_1 %} {{ entity_2 }} {% elif trigger.from_state.entity_id == entity_2 %} {{ entity_1 }} {% elif trigger.from_state.entity_id == entity_3 %} {{ entity_4 }} {% else %} {{ entity_3 }} {% endif %}"
+    entity_id: !input 'entity_4'
+    to:
+      - "off"
+      - "on"
+condition:
+  - condition: template
+    value_template: '{{ states(entity_1) != states(entity_2) or states(entity_1) != states(entity_3) or states(entity_1) != states(entity_4) }}'
+  - condition: template
+    value_template: '{{ trigger.to_state.state != trigger.from_state.state }}'
+  - condition: template
+    value_template: '{{ trigger.to_state.context.parent_id is none or (trigger.to_state.context.id != this.context.id and trigger.to_state.context.parent_id != this.context.id) }}'
+action:
+  - service: homeassistant.turn_{{ trigger.to_state.state }}
+    data:
+      entity_id: >
+        {% if trigger.from_state.entity_id == entity_1 %}
+          {{ entity_2 }}
+          {{ entity_3 }}
+          {{ entity_4 }}
+        {% elif trigger.from_state.entity_id == entity_2 %}
+          {{ entity_1 }}
+          {{ entity_3 }}
+          {{ entity_4 }}
+        {% elif trigger.from_state.entity_id == entity_3 %}
+          {{ entity_1 }}
+          {{ entity_2 }}
+          {{ entity_4 }}
+        {% else %}
+          {{ entity_1 }}
+          {{ entity_2 }}
+          {{ entity_3 }}
+        {% endif %}
